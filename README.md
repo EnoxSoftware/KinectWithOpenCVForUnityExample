@@ -19,7 +19,7 @@ Setup
 
 Samples
 -----
-**[ColorFrameSample.css](ColorFrameSample.cs)**  
+**[ColorFrameSample.cs](ColorFrameSample.cs)**  
 Converts ColorFrame acquired from "Kinect" to Mat of "OpenCV", perform image processing.
 
 **[MultiSourceFrameSample.cs](MultiSourceFrameSample.cs)**  
