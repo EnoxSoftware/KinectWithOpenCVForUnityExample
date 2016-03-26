@@ -14,7 +14,7 @@ Kinect V2
 Setup
 -----
 * Import Kinect.2.0.1410.19000.unitypackage  
-* Import OpenCVForUnity1.1.4 from AssetStore
+* Import OpenCVForUnity2.0.0 from AssetStore
 
 
 Samples

@@ -92,7 +92,7 @@ public class ColorFrameSample : MonoBehaviour
 			//create a striped background.
 			comicBgMat = new Mat (texture.height, texture.width, CvType.CV_8UC1, new Scalar (255));
 			for (int i = 0; i < comicBgMat.rows ()*2.5f; i=i+4) {
-				Core.line (comicBgMat, new Point (0, 0 + i), new Point (comicBgMat.cols (), -comicBgMat.cols () + i), new Scalar (0), 1);
+				Imgproc.line (comicBgMat, new Point (0, 0 + i), new Point (comicBgMat.cols (), -comicBgMat.cols () + i), new Scalar (0), 1);
 			}
 			
 			comicDstMat = new Mat (texture.height, texture.width, CvType.CV_8UC1);
@@ -127,19 +127,19 @@ public class ColorFrameSample : MonoBehaviour
 
 		if (mode == modeType.original) {
 			
-			Core.putText (rgbaMat, "ORIGINAL MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
+			Imgproc.putText (rgbaMat, "ORIGINAL MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
 
 		} else if (mode == modeType.sepia) {
 			
 			Core.transform (rgbaMat, rgbaMat, sepiaKernel);
 			
-			Core.putText (rgbaMat, "SEPIA MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+			Imgproc.putText (rgbaMat, "SEPIA MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
 
 		} else if (mode == modeType.pixelize) {
 			Imgproc.resize (rgbaMat, pixelizeIntermediateMat, pixelizeSize0, 0.1, 0.1, Imgproc.INTER_NEAREST);
 			Imgproc.resize (pixelizeIntermediateMat, rgbaMat, rgbaMat.size (), 0.0, 0.0, Imgproc.INTER_NEAREST);
 			
-			Core.putText (rgbaMat, "PIXELIZE MODE" + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+			Imgproc.putText (rgbaMat, "PIXELIZE MODE" + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
 
 		} else if (mode == modeType.comic) {
 			Imgproc.cvtColor (rgbaMat, comicGrayMat, Imgproc.COLOR_RGBA2GRAY);
@@ -189,7 +189,7 @@ public class ColorFrameSample : MonoBehaviour
 			
 			Imgproc.cvtColor (comicDstMat, rgbaMat, Imgproc.COLOR_GRAY2RGBA);
 
-			Core.putText (rgbaMat, "COMIC MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
+			Imgproc.putText (rgbaMat, "COMIC MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
 
 		}
 
