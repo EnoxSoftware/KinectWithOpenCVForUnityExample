@@ -167,7 +167,9 @@ public class MultiSourceFrameSample : MonoBehaviour
 
 				int index = x + y * width;
 
-				if (bodyIndexData [(int)depthSpacePoints [index].X + (int)depthSpacePoints [index].Y * depthWidth] == 255) {
+				int tmp = ((int)depthSpacePoints [index].X + (int)depthSpacePoints [index].Y * depthWidth < 0) ? 0 : (int)depthSpacePoints [index].X + (int)depthSpacePoints [index].Y * depthWidth;
+
+				if (bodyIndexData [tmp] == 255) {
 					maskData [index] = 0;
 				} else {
 					maskData [index] = 255;
