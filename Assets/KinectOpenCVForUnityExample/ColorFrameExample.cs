@@ -4,18 +4,15 @@ using Windows.Kinect;
 
 using OpenCVForUnity;
 
-public class MultiSourceFrameSample : MonoBehaviour
+public class ColorFrameExample : MonoBehaviour
 {
 	
 	KinectSensor sensor;
-	MultiSourceFrameReader reader;
-	CoordinateMapper coordinateMapper;
-	DepthSpacePoint[] depthSpacePoints;
+	ColorFrameReader reader;
 	Texture2D texture;
-	byte[] colorData;
-	ushort[] depthData;
-	byte[] bodyIndexData;
-	byte[] maskData;
+	byte[] data;
+	Mat rgbaMat;
+
 	public enum modeType
 	{
 		original,
@@ -23,20 +20,16 @@ public class MultiSourceFrameSample : MonoBehaviour
 		pixelize,
 		comic
 	}
-	
 	public modeType mode;
-	Mat rgbaMat;
-	Mat maskMat;
-	Mat outputMat;
 
 
 	//sepia
 	Mat sepiaKernel;
-	
+
 	//pixelize
 	Size pixelizeSize0;
 	Mat pixelizeIntermediateMat;
-	
+
 	//comic
 	Mat comicGrayMat;
 	Mat comicLineMat;
@@ -45,49 +38,36 @@ public class MultiSourceFrameSample : MonoBehaviour
 	Mat comicDstMat;
 	byte[] comicGrayPixels;
 	byte[] comicMaskPixels;
-	
 
-	
 	void Start ()
 	{
 		sensor = KinectSensor.GetDefault ();
 		
 		if (sensor != null) {
-			coordinateMapper = sensor.CoordinateMapper;
-
-			reader = sensor.OpenMultiSourceFrameReader (FrameSourceTypes.Color | FrameSourceTypes.Depth | FrameSourceTypes.BodyIndex);
+			reader = sensor.ColorFrameSource.OpenReader ();
 			
-			FrameDescription colorFrameDesc = sensor.ColorFrameSource.CreateFrameDescription (ColorImageFormat.Rgba);
-			texture = new Texture2D (colorFrameDesc.Width, colorFrameDesc.Height, TextureFormat.RGBA32, false);
-			colorData = new byte[colorFrameDesc.BytesPerPixel * colorFrameDesc.LengthInPixels];
+			FrameDescription frameDesc = sensor.ColorFrameSource.CreateFrameDescription (ColorImageFormat.Rgba);
 
-
-			FrameDescription depthFrameDesc = sensor.DepthFrameSource.FrameDescription;
-			depthData = new ushort[depthFrameDesc.LengthInPixels];
-			depthSpacePoints = new DepthSpacePoint[colorFrameDesc.LengthInPixels];
-
-			FrameDescription bodyIndexFrameDesc = sensor.BodyIndexFrameSource.FrameDescription;
-			bodyIndexData = new byte[bodyIndexFrameDesc.BytesPerPixel * bodyIndexFrameDesc.LengthInPixels];
-		
+			
+			texture = new Texture2D (frameDesc.Width, frameDesc.Height, TextureFormat.RGBA32, false);
+			data = new byte[frameDesc.BytesPerPixel * frameDesc.LengthInPixels];
 			
 			if (!sensor.IsOpen) {
 				sensor.Open ();
 			}
 
-			rgbaMat = new Mat (colorFrameDesc.Height, colorFrameDesc.Width, CvType.CV_8UC4);
-			Debug.Log ("rgbaMat " + rgbaMat.ToString ());
 
-			maskMat = new Mat (rgbaMat.rows (), rgbaMat.cols (), CvType.CV_8UC1);
-			outputMat = new Mat (rgbaMat.rows (), rgbaMat.cols (), CvType.CV_8UC4);
+			rgbaMat = new Mat (texture.height, texture.width, CvType.CV_8UC4);
 			
-			maskData = new byte[rgbaMat.rows () * rgbaMat.cols ()];
+			Debug.Log ("rgbaMat " + rgbaMat.ToString ());
 			
 			gameObject.transform.localScale = new Vector3 (texture.width, texture.height, 1);
+			
 			gameObject.GetComponent<Renderer> ().material.mainTexture = texture;
+			
 			Camera.main.orthographicSize = texture.height / 2;
-
-
-
+			
+			
 			// sepia
 			sepiaKernel = new Mat (4, 4, CvType.CV_32F);
 			sepiaKernel.put (0, 0, /* R */0.189f, 0.769f, 0.393f, 0f);
@@ -109,7 +89,11 @@ public class MultiSourceFrameSample : MonoBehaviour
 			//create a striped background.
 			comicBgMat = new Mat (texture.height, texture.width, CvType.CV_8UC1, new Scalar (255));
 			for (int i = 0; i < comicBgMat.rows ()*2.5f; i=i+4) {
+#if OPENCV_3
 				Imgproc.line (comicBgMat, new Point (0, 0 + i), new Point (comicBgMat.cols (), -comicBgMat.cols () + i), new Scalar (0), 1);
+#else
+				Core.line (comicBgMat, new Point (0, 0 + i), new Point (comicBgMat.cols (), -comicBgMat.cols () + i), new Scalar (0), 1);
+#endif
 			}
 			
 			comicDstMat = new Mat (texture.height, texture.width, CvType.CV_8UC1);
@@ -120,95 +104,60 @@ public class MultiSourceFrameSample : MonoBehaviour
 			UnityEngine.Debug.LogError ("No ready Kinect found!");
 		}
 
+
 	}
 	
 	void Update ()
 	{
 		if (reader != null) {
-			MultiSourceFrame frame = reader.AcquireLatestFrame ();
-			if (frame != null) {
+			ColorFrame frame = reader.AcquireLatestFrame ();
 			
-				using (ColorFrame colorFrame = frame.ColorFrameReference.AcquireFrame()) {
-					if (colorFrame != null) {
-						colorFrame.CopyConvertedFrameDataToArray (colorData, ColorImageFormat.Rgba);
-					}
-				
-				}
-				using (DepthFrame depthFrame = frame.DepthFrameReference.AcquireFrame()) {
-					if (depthFrame != null) {
-						//Debug.Log ("bodyIndexFrame not null");
-						depthFrame.CopyFrameDataToArray (depthData);
-					}
-				}
-				using (BodyIndexFrame bodyIndexFrame = frame.BodyIndexFrameReference.AcquireFrame()) {
-					if (bodyIndexFrame != null) {
-						//Debug.Log ("bodyIndexFrame not null");
-						bodyIndexFrame.CopyFrameDataToArray (bodyIndexData);
-					}
-				}
+			if (frame != null) {
+				frame.CopyConvertedFrameDataToArray (data, ColorImageFormat.Rgba);
 
+				frame.Dispose ();
 				frame = null;
+
 			}
-		}else{
+		} else {
 			return;
 		}
 
-		Utils.copyToMat (colorData, outputMat);
+		Utils.copyToMat (data, rgbaMat);
 
-		Utils.copyToMat (colorData, rgbaMat);
 
-		coordinateMapper.MapColorFrameToDepthSpace (depthData, depthSpacePoints);
-		int width = rgbaMat.width ();
-		int height = rgbaMat.height ();
-		int depthWidth = 512;
-		byte[] maskOn = new byte[]{0};
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-
-				int index = x + y * width;
-
-				int tmp = ((int)depthSpacePoints [index].X + (int)depthSpacePoints [index].Y * depthWidth < 0) ? 0 : (int)depthSpacePoints [index].X + (int)depthSpacePoints [index].Y * depthWidth;
-
-				if (bodyIndexData [tmp] == 255) {
-					maskData [index] = 0;
-				} else {
-					maskData [index] = 255;
-				}
-			}
-		}
-		Utils.copyToMat (maskData, maskMat);
-
-		
 		if (mode == modeType.original) {
-
-			rgbaMat.copyTo (outputMat, maskMat);
-			
-			Imgproc.putText (outputMat, "ORIGINAL MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
-			
+#if OPENCV_3
+			Imgproc.putText (rgbaMat, "ORIGINAL MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
+#else
+			Core.putText (rgbaMat, "ORIGINAL MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
+#endif
 		} else if (mode == modeType.sepia) {
-			
+
 			Core.transform (rgbaMat, rgbaMat, sepiaKernel);
 
-			rgbaMat.copyTo (outputMat, maskMat);
-			
-			Imgproc.putText (outputMat, "SEPIA MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
-			
+			#if OPENCV_3
+			Imgproc.putText (rgbaMat, "SEPIA MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+#else
+			Core.putText (rgbaMat, "SEPIA MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+#endif
 		} else if (mode == modeType.pixelize) {
 			Imgproc.resize (rgbaMat, pixelizeIntermediateMat, pixelizeSize0, 0.1, 0.1, Imgproc.INTER_NEAREST);
 			Imgproc.resize (pixelizeIntermediateMat, rgbaMat, rgbaMat.size (), 0.0, 0.0, Imgproc.INTER_NEAREST);
 
-			rgbaMat.copyTo (outputMat, maskMat);
-
-			Imgproc.putText (outputMat, "PIXELIZE MODE" + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
-			
+#if OPENCV_3
+			Imgproc.putText (rgbaMat, "PIXELIZE MODE" + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+#else
+			Core.putText (rgbaMat, "PIXELIZE MODE" + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+#endif
 		} else if (mode == modeType.comic) {
 			Imgproc.cvtColor (rgbaMat, comicGrayMat, Imgproc.COLOR_RGBA2GRAY);
 			
 			comicBgMat.copyTo (comicDstMat);
 			
 			Imgproc.GaussianBlur (comicGrayMat, comicLineMat, new Size (3, 3), 0);
-			
-			
+
+
 			Utils.copyFromMat (comicGrayMat, comicGrayPixels);
 			
 			for (int i = 0; i < comicGrayPixels.Length; i++) {
@@ -230,13 +179,13 @@ public class MultiSourceFrameSample : MonoBehaviour
 				}
 			}
 			
-			
+
 			Utils.copyToMat (comicGrayPixels, comicGrayMat);
-			
+
 			Utils.copyToMat (comicMaskPixels, comicMaskMat);
 			
 			comicGrayMat.copyTo (comicDstMat, comicMaskMat);
-			
+
 			
 			Imgproc.Canny (comicLineMat, comicLineMat, 20, 120);
 			
@@ -249,14 +198,15 @@ public class MultiSourceFrameSample : MonoBehaviour
 			
 			Imgproc.cvtColor (comicDstMat, rgbaMat, Imgproc.COLOR_GRAY2RGBA);
 
-
-			rgbaMat.copyTo (outputMat, maskMat);
-
-			Imgproc.putText (outputMat, "COMIC MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Imgproc.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
-
+#if OPENCV_3
+			Imgproc.putText (rgbaMat, "COMIC MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);	
+#else
+			Core.putText (rgbaMat, "COMIC MODE " + texture.width + "x" + texture.height, new Point (5, texture.height - 5), Core.FONT_HERSHEY_PLAIN, 4.0, new Scalar (255, 0, 0, 255), 3);
+#endif
 		}
-		
-		Utils.matToTexture (outputMat, texture);
+
+		Utils.matToTexture (rgbaMat, texture);
+
 	}
 	
 	void OnApplicationQuit ()
@@ -274,7 +224,7 @@ public class MultiSourceFrameSample : MonoBehaviour
 			sensor = null;
 		}
 	}
-	
+
 	void OnGUI ()
 	{
 		float screenScale = Screen.width / 480.0f;
@@ -300,7 +250,7 @@ public class MultiSourceFrameSample : MonoBehaviour
 			mode = modeType.comic;
 		}
 		
+		
 		GUILayout.EndVertical ();
 	}
 }
-

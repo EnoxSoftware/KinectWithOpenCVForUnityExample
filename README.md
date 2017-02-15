@@ -1,4 +1,4 @@
-Kinect with OpenCV for Unity Sample
+Kinect with OpenCV for Unity Example
 ====================
 
 Demo Video
@@ -17,12 +17,12 @@ Setup
 * Import OpenCVForUnity2.0.0 from AssetStore
 
 
-Samples
+Examples
 -----
-**[ColorFrameSample.cs](ColorFrameSample.cs)**  
+**[ColorFrameExample.cs](/Assets/KinectOpenCVForUnityExample/ColorFrameExample.cs)**  
 Converts ColorFrame acquired from "Kinect" to Mat of "OpenCV", perform image processing.
 
-**[MultiSourceFrameSample.cs](MultiSourceFrameSample.cs)**  
+**[MultiSourceFrameExample.cs](/Assets/KinectOpenCVForUnityExample/MultiSourceFrameExample.cs)**  
 Converts BodyIndexFrame acquired from "Kinect" to Mat of "OpenCV", perform image processing only person.
 
 
